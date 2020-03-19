@@ -194,7 +194,7 @@ def Fx_product(a, x):
         
     x_ = np.reshape(x, (len(x),1))
     (dimN, dimM) = _A.shape
-    x_top = _A.T.dot(x_[dimM-1:dimN+dimM-1])
+    x_top = _A.T.dot(x_[dimM:dimN+dimM])
     x_bot = -_A.dot(x_[:dimM])
     return np.append(x_top, x_bot)
 
@@ -274,6 +274,6 @@ def J_operator(a):
     def J(q):
         Fx = Fx_product(_A, q)
         Ax = Fx[:dimM]
-        ATx = Fx[dimM-1:dimN+dimM-1]
+        ATx = Fx[dimM:dimN+dimM]
         return np.amax(Ax) - np.amin(ATx)
     return J
