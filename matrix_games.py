@@ -17,15 +17,16 @@ def create_A(_name):
     External function for matrix games library'
     
     Computes A matrix using stored entries:
-    - "rock_paper_scissor" :
-    - "rand"               :
-    - "rand_sparse"        :
-    - "rand_large"         :
-    - "rand_large_sparse"  :
+    - "rock_paper_scissor" : payoff matrix for the game rock, paper, scissor
+    - "rand"               : a random 10x10 matrix
+    - "rand_sparse"        : a random 10x10 sparse matrix [1]
+    - "rand_large"         : a random 10000x5000 matrix
+    - "rand_large_sparse"  : a random 10000x5000 sparse matrix
     
     Parameters
     ----------
     _name : string
+        refernce string of the matrix to be returned
         
     Returns
     -------
