@@ -12,11 +12,62 @@ import numpy.linalg as LA
 ## --------------------------------------------------------------------------------##
 
 
-def create_A(n, m, sparsity):
+def create_A(_name):
     """
     External function for matrix games library'
     
-    Computes a matrix with random entries
+    Computes A matrix using stored entries:
+    - "rock_paper_scissor" :
+    - "rand"               :
+    - "rand_sparse"        :
+    - "rand_large"         :
+    - "rand_large_sparse"  :
+    
+    Parameters
+    ----------
+    _name : string
+        
+    Returns
+    -------
+    out : ndarray or a sparse matrix in csr format.[2]
+    
+    Raises
+    ------
+    ValueError: unknown string
+        If _name is not one of the stored strings and defined A matices.
+        
+    Notes
+    -----
+    
+    References
+    ----------
+    .. [1] https://docs.scipy.org/doc/scipy/reference/generated/scipy.sparse.random.html#scipy.sparse.random
+    .. [2] https://docs.scipy.org/doc/scipy/reference/generated/scipy.sparse.csr_matrix.html#scipy.sparse.csr_matrix
+    
+    Examples
+    --------
+    """
+    if _name is "rock_paper_scissor":
+        return np.array([[0, -1, 1],[1, 0, -1],[-1, 1, 0]])
+    elif _name is "rand":
+        return create_A_rand(10,10,False)
+    elif _name is "rand_sparse":
+        return create_A_rand(10,10,True)
+    elif _name is "rand_large":
+        return create_A_rand(10000,5000,False)
+    elif _name is "rand_large_sparse":
+        return create_A_rand(10000,5000,True)
+    else:
+        raise ValueError('Input string unknown. Please refer to documentation.') 
+    
+
+## --------------------------------------------------------------------------------##
+  
+def create_A_rand(n, m, sparsity):
+    """
+    External function for matrix games library'
+    
+    Computes A matrix with random entries and size (n,m)
     
     Parameters
     ----------
@@ -53,9 +104,9 @@ def create_A(n, m, sparsity):
         a = np.zeros([n,m])
         for i in range(n):
             for j in range(m):
-                a[i,j] = uniform(-1,1)
+                a[i,j] = uniform(0,1)
         return a
-
+    
 ## --------------------------------------------------------------------------------##
 
 def create_F(a):
@@ -143,14 +194,10 @@ def create_F_rand(n, m, sparsity):
     --------
     """
     if sparsity:
-        mat_a = create_A(n,m,sparsity).toarray()
+        mat_a = create_A_rand(n,m,sparsity).toarray()
     else:
-        mat_a = create_A(n,m,sparsity)
-    zero_matrix_top = np.zeros((mat_a.shape[1], mat_a.shape[1]))
-    zero_matrix_bot = np.zeros((mat_a.shape[0], mat_a.shape[0]))
-    left_F = np.concatenate((zero_matrix_top, -mat_a))
-    right_F = np.concatenate((mat_a.transpose(), zero_matrix_bot))
-    return np.concatenate((left_F, right_F), axis=1)
+        mat_a = create_A_rand(n,m,sparsity)
+    return create_F(mat_a)
 
 ## --------------------------------------------------------------------------------##
 
@@ -277,3 +324,95 @@ def J_operator(a):
         ATx = Fx[dimM:dimN+dimM]
         return np.amax(Ax) - np.amin(ATx)
     return J
+
+## --------------------------------------------------------------------------------##
+
+def proxg_operator(_name):
+    """
+    External function for matrix games library'
+    
+    Computes the proxima operator. There are __ predefined operators available:
+        - "simplex_proj" : uses the simplex projection see the function 'projsplx'
+        - "fmax"         : returns the (q)+ version of the vector 
+        - "none"         : just returns q itself
+    
+    Parameters
+    ----------
+    _name : string
+        the name of the proximal operator to use
+        
+    Returns
+    -------
+    out : function 
+        a function that descibes the prox_g operator 
+    
+    Raises
+    ------
+    ValueError: unknown string
+        If _name is not one of the stored strings and defined proxg_operators.   
+        
+    Notes
+    -----
+    
+    References
+    ----------
+    
+    Examples
+    --------
+    """
+    if _name is "simplex_proj":
+        def _prox_g(q, eps): 
+            return projsplx(q)
+    elif  _name is "fmax":
+        def _prox_g(q, eps):
+            return np.fmax(q,0)
+    elif  _name is "none":
+        def _prox_g(q, eps):
+            return q 
+    else:
+        raise ValueError('Input string unknown. Please refer to documentation.') 
+    return _prox_g
+
+## --------------------------------------------------------------------------------##
+
+def projsplx(q):
+    """
+    External function for matrix games library'
+    
+    Computes the projection onto a simplex using the algorithm described here[1].
+    
+    Parameters
+    ----------
+    q : ndarray
+        the input vector 
+        
+    Returns
+    -------
+    out : ndarray 
+        the input vector projected onto a simplex 
+    
+    Raises
+    ------
+        
+    Notes
+    -----
+    
+    References
+    ----------
+    .. [1] https://arxiv.org/abs/1101.6081
+    
+    Examples
+    --------
+    """
+    _n = len(q)
+    q_sorted = np.sort(q)
+    _t = -1
+    _zeros = np.zeros(_n)
+    for i in reversed(range(len(q))):
+        _t = np.sum(q[i+1:]-1)/(_n-i)
+        if _t >= q[i]:
+            return np.fmax(q-_t,_zeros)
+    return np.fmax(q-np.sum(q-1)/_n,_zeros)  
+
+## --------------------------------------------------------------------------------##
+  
