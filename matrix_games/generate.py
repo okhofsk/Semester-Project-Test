@@ -1,36 +1,40 @@
 # Import Libraries and Dependencies
 import numpy as np
 import matplotlib.pyplot as plt
+import scipy as sp
+import numpy.linalg as LA
 from random import uniform
 from time import perf_counter
-import scipy as sp
 from scipy.sparse import random
-import numpy.linalg as LA
 
-## --------------------------------------------------------------------------------##
-                            ## External Functions ##
-## --------------------------------------------------------------------------------##
-
-
-def create_A(_name):
+def create_A(_name, _large=False, _custom=False, _tulpe=(0,0)):
     """
     External function for matrix games library'
     
     Computes A matrix using stored entries:
-    - "rock_paper_scissor" : payoff matrix for the game rock, paper, scissor
-    - "rand"               : a random 10x10 matrix
-    - "rand_sparse"        : a random 10x10 sparse matrix [1]
-    - "rand_large"         : a random 10000x5000 matrix
-    - "rand_large_sparse"  : a random 10000x5000 sparse matrix
+    - "rock_paper_scissor"      : payoff matrix for the game rock, paper, scissor
+    - "marriage_problem_small"  : Hall's marriage problem as a 10x10 matrix
+    - "normandy"                : Matrix from “Normandy: Game and Reality”[1]
+    - "diag"                    : random diagonal game matrix; if custom size, 
+                           second dim will be considered to make nxn matrix
+    - "triangular"              : random upper triangular matrix
+    - "rand"                    : a random 10x10 matrix
+    - "rand_sparse"             : a random 10x10 sparse matrix [2]
     
     Parameters
     ----------
     _name : string
         refernce string of the matrix to be returned
+    _large : string
+        either small (10x10) or large (1000x1000) matrix, default False
+    _custom : string
+        define own matrix shape set to true and add the shape as a tulpe, default False
+    _tulpe : tulpe 
+        define shape of matrix only if _custom is True, default (0,0)
         
     Returns
     -------
-    out : ndarray or a sparse matrix in csr format.[2]
+    out : ndarray or a sparse matrix in csr format.[3]
     
     Raises
     ------
@@ -42,24 +46,54 @@ def create_A(_name):
     
     References
     ----------
-    .. [1] https://docs.scipy.org/doc/scipy/reference/generated/scipy.sparse.random.html#scipy.sparse.random
-    .. [2] https://docs.scipy.org/doc/scipy/reference/generated/scipy.sparse.csr_matrix.html#scipy.sparse.csr_matrix
+    .. [1] “Normandy: Game and Reality” by W. Drakert in Moves, No. 6 (1972)
+    .. [2] https://docs.scipy.org/doc/scipy/reference/generated/scipy.sparse.random.html#scipy.sparse.random
+    .. [3] https://docs.scipy.org/doc/scipy/reference/generated/scipy.sparse.csr_matrix.html#scipy.sparse.csr_matrix
     
     Examples
     --------
     """
-    if _name is "rock_paper_scissor":
-        return np.array([[0, -1, 1],[1, 0, -1],[-1, 1, 0]])
-    elif _name is "rand":
-        return create_A_rand(10,10,False)
-    elif _name is "rand_sparse":
-        return create_A_rand(10,10,True)
-    elif _name is "rand_large":
-        return create_A_rand(10000,5000,False)
-    elif _name is "rand_large_sparse":
-        return create_A_rand(10000,5000,True)
-    else:
-        raise ValueError('Input string unknown. Please refer to documentation.') 
+    if _custom == True :
+        if _tulpe == (0,0):
+            raise ValueError('Input a tulpe as the size of your A matrix. Please refer to documentation.') 
+        else : 
+            if _name is "rock_paper_scissor":
+                return np.array([[0, -1, 1],[1, 0, -1],[-1, 1, 0]])
+            elif _name is "normandy":
+                return np.array([[13, 29, 8, 12, 16, 23],[18, 22, 21, 22, 29, 31],[18, 22, 31, 31, 27, 37],[11, 22, 12, 21, 21, 26],[18, 16, 19, 14, 19, 28],[23, 22, 19, 23, 30, 34]])
+            elif _name is "diag": 
+                return np.diagflat(create_A_rand(1, _tulpe[1], False))
+            elif _name is "triangular":
+                return np.triu(create_A_rand(_tulpe[0], _tulpe[1], False)) 
+            elif _name is "marriage_problem":
+                return np.random.randint(2, size=_tulpe)
+            elif _name is "rand":
+                return create_A_rand(_tulpe[0], _tulpe[1],False)
+            elif _name is "rand_sparse":
+                return create_A_rand(_tulpe[0], _tulpe[1],True)
+            else:
+                raise ValueError('Input string unknown. Please refer to documentation.') 
+    else :
+        if _large == True:
+            tulpe = (1000,1000)
+        else : 
+            tulpe = (10,10)
+        if _name is "rock_paper_scissor":
+            return np.array([[0, -1, 1],[1, 0, -1],[-1, 1, 0]])
+        elif _name is "normandy":
+            return np.array([[13, 29, 8, 12, 16, 23],[18, 22, 21, 22, 29, 31],[18, 22, 31, 31, 27, 37],[11, 22, 12, 21, 21, 26],[18, 16, 19, 14, 19, 28],[23, 22, 19, 23, 30, 34]])
+        elif _name is "diag": 
+            return np.diag(create_A_rand(1, tulpe[1], False))
+        elif _name is "triangular":
+            return np.triu(create_A_rand(tulpe[0], tulpe[1], False)) 
+        elif _name is "marriage_problem":
+            return np.random.randint(2, size=tulpe)
+        elif _name is "rand":
+            return create_A_rand(tulpe[0], tulpe[1],False)
+        elif _name is "rand_sparse":
+            return create_A_rand(tulpe[0], tulpe[1],True)
+        else:
+            raise ValueError('Input string unknown. Please refer to documentation.') 
     
 
 ## --------------------------------------------------------------------------------##
@@ -102,12 +136,8 @@ def create_A_rand(n, m, sparsity):
     if sparsity:
         return sp.sparse.random(n, m)
     else:
-        a = np.zeros([n,m])
-        for i in range(n):
-            for j in range(m):
-                a[i,j] = uniform(0,1)
-        return a
-    
+        return np.random.random((n, m))
+
 ## --------------------------------------------------------------------------------##
 
 def create_F(a):
@@ -240,6 +270,7 @@ def Fx_product(a, x):
     x_top = a.T@x_[dimM:dimN+dimM]
     x_bot = -a@x_[:dimM]
     return np.append(x_top, x_bot)
+
 ## --------------------------------------------------------------------------------##
 
 def Fx(a):
@@ -277,7 +308,7 @@ def Fx(a):
 
 ## --------------------------------------------------------------------------------##
 
-def J_operator(a, _name): 
+def J_operator(a, _name, prox_g): 
     """
     External function for matrix games library'
     
@@ -289,6 +320,8 @@ def J_operator(a, _name):
         the matrix A from the matrix games problem in sparse or ndarray form
     _name : string
         the name of the J operator to use
+    prox_g : function
+        the proximal operator function to use
         
     Returns
     -------
@@ -320,9 +353,9 @@ def J_operator(a, _name):
             Ax = Fx[:dimM]
             ATx = Fx[dimM:dimN+dimM]
             return np.amax(Ax) - np.amin(ATx)
-    #else :
-    #    def J(q):
-    #        return LA.norm(q - prox_g(q - Fx(q), 1))
+    else :
+        def J(q):
+            return LA.norm(q - prox_g(q - Fx(q), 1))
     return J
 
 ## --------------------------------------------------------------------------------##
@@ -413,6 +446,3 @@ def projsplx(q):
         if _t >= q[i]:
             return np.fmax(q-_t,_zeros)
     return np.fmax(q-np.sum(q-1)/_n,_zeros)  
-
-## --------------------------------------------------------------------------------##
-  

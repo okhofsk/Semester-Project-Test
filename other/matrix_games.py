@@ -277,7 +277,7 @@ def Fx(a):
 
 ## --------------------------------------------------------------------------------##
 
-def J_operator(a, _name): 
+def J_operator(a): 
     """
     External function for matrix games library'
     
@@ -287,8 +287,6 @@ def J_operator(a, _name):
     ----------
     a : ndarray/sparse.csr[1]
         the matrix A from the matrix games problem in sparse or ndarray form
-    _name : string
-        the name of the J operator to use
         
     Returns
     -------
@@ -314,15 +312,12 @@ def J_operator(a, _name):
         _A = a
     
     (dimN, dimM) = _A.shape;
-    if _name == 'simplex':
-        def J(q):
-            Fx = Fx_product(_A, q)
-            Ax = Fx[:dimM]
-            ATx = Fx[dimM:dimN+dimM]
-            return np.amax(Ax) - np.amin(ATx)
-    #else :
-    #    def J(q):
-    #        return LA.norm(q - prox_g(q - Fx(q), 1))
+    
+    def J(q):
+        Fx = Fx_product(_A, q)
+        Ax = Fx[:dimM]
+        ATx = Fx[dimM:dimN+dimM]
+        return np.amax(Ax) - np.amin(ATx)
     return J
 
 ## --------------------------------------------------------------------------------##
