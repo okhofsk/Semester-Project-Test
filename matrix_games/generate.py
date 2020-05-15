@@ -3,6 +3,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import scipy as sp
 import numpy.linalg as LA
+import networkx as nx
 from random import uniform
 from time import perf_counter
 from scipy.sparse import random
@@ -13,13 +14,13 @@ def create_A(_name, _large=False, _custom=False, _tulpe=(0,0)):
     
     Computes A matrix using stored entries:
     - "rock_paper_scissor"      : payoff matrix for the game rock, paper, scissor
-    - "marriage_problem_small"  : Hall's marriage problem as a 10x10 matrix
+    - "hide_and_seek"           : Hide and Seek Matrix
     - "normandy"                : Matrix from “Normandy: Game and Reality”[1]
     - "diag"                    : random diagonal game matrix; if custom size, 
-                           second dim will be considered to make nxn matrix
+                                   second dim will be considered to make nxn matrix
     - "triangular"              : random upper triangular matrix
-    - "rand"                    : a random 10x10 matrix
-    - "rand_sparse"             : a random 10x10 sparse matrix [2]
+    - "rand"                    : a random matrix
+    - "rand_sparse"             : a random sparse matrix [2]
     
     Parameters
     ----------
@@ -65,8 +66,13 @@ def create_A(_name, _large=False, _custom=False, _tulpe=(0,0)):
                 return np.diagflat(create_A_rand(1, _tulpe[1], False))
             elif _name is "triangular":
                 return np.triu(create_A_rand(_tulpe[0], _tulpe[1], False)) 
-            elif _name is "marriage_problem":
+            elif _name is "hide_and_seek":
                 return np.random.randint(2, size=_tulpe)
+            elif _name is "one_plus":
+                ones = np.ones((_tulpe[0], _tulpe[0]))
+                return (-2)*ones + np.diag(np.diag(ones, k=1), k=1) + np.diag(np.diag(ones, k=-1), k=-1) + np.diag(np.diag(ones))*2
+            elif _name is "matching_pennies":
+                return create_rand_pennies_mat(_tulpe[0])
             elif _name is "rand":
                 return create_A_rand(_tulpe[0], _tulpe[1],False)
             elif _name is "rand_sparse":
@@ -86,8 +92,13 @@ def create_A(_name, _large=False, _custom=False, _tulpe=(0,0)):
             return np.diag(create_A_rand(1, tulpe[1], False))
         elif _name is "triangular":
             return np.triu(create_A_rand(tulpe[0], tulpe[1], False)) 
-        elif _name is "marriage_problem":
+        elif _name is "hide_and_seek":
             return np.random.randint(2, size=tulpe)
+        elif _name is "one_plus":
+            ones = np.ones((tulpe[0], tulpe[0]))
+            return (-2)*ones + np.diag(np.diag(ones, k=1), k=1) + np.diag(np.diag(ones, k=-1), k=-1) + np.diag(np.diag(ones))*2
+        elif _name is "matching_pennies":
+            return create_rand_pennies_mat(tulpe[0])
         elif _name is "rand":
             return create_A_rand(tulpe[0], tulpe[1],False)
         elif _name is "rand_sparse":
@@ -305,15 +316,15 @@ def Fx(a):
     def F(q):
         return Fx_product(a, q)
     return F
-
+    
 ## --------------------------------------------------------------------------------##
 
-def J_operator(a, _name, prox_g): 
+def J_operator(self, _name, prox_g): 
     """
     External function for matrix games library'
-    
+
     Computes the J operator
-    
+
     Parameters
     ----------
     a : ndarray/sparse.csr[1]
@@ -322,41 +333,38 @@ def J_operator(a, _name, prox_g):
         the name of the J operator to use
     prox_g : function
         the proximal operator function to use
-        
+
     Returns
     -------
     out : function 
         a function that descibes the J operator 
-    
+
     Raises
     ------
-        
+
     Notes
     -----
-    
+
     References
     ----------
     .. [1] https://docs.scipy.org/doc/scipy/reference/generated/scipy.sparse.csr_matrix.html#scipy.sparse.csr_matrix
-    
+
     Examples
     --------
     """
-    if sp.sparse.issparse(a):
-        _A = a.toarray()
-    else :
-        _A = a
-    
-    (dimN, dimM) = _A.shape;
     if _name == 'simplex':
         def J(q):
             Fx = Fx_product(_A, q)
             Ax = Fx[:dimM]
             ATx = Fx[dimM:dimN+dimM]
             return np.amax(Ax) - np.amin(ATx)
+        def J_complete(q, ax, ay):
+            return np.amax(ax) - np.amin(ay)
+        return J, J_complete
     else :
         def J(q):
             return LA.norm(q - prox_g(q - Fx(q), 1))
-    return J
+        return J
 
 ## --------------------------------------------------------------------------------##
 
@@ -446,3 +454,26 @@ def projsplx(q):
         if _t >= q[i]:
             return np.fmax(q-_t,_zeros)
     return np.fmax(q-np.sum(q-1)/_n,_zeros)  
+
+def create_rand_pennies_mat(size0):
+    G = nx.fast_gnp_random_graph(size0, 1.0, 78456, True)
+    W = np.zeros(size0)
+    u0 = -1
+    for (u, v) in G.edges():
+        wij = np.random.randint(0,10)
+        G.edges[u,v]['weight'] = wij
+        if (u == u0):
+            W[u] += wij
+        else :
+            u0 = u
+            W[u] = wij
+
+
+    a = np.zeros((size0,size0))
+    for (u,v) in G.edges():
+        a[u,v] = G.edges[u,v]['weight']
+
+    for i in range(size0):
+        wii = np.random.randint(0,10)
+        a[i,i] = wii - W[i]
+    return a
