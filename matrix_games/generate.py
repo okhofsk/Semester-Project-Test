@@ -319,7 +319,7 @@ def Fx(a):
     
 ## --------------------------------------------------------------------------------##
 
-def J_operator(self, _name, prox_g): 
+def J_operator(A_, _name, prox_g): 
     """
     External function for matrix games library'
 
@@ -352,9 +352,10 @@ def J_operator(self, _name, prox_g):
     Examples
     --------
     """
+    dimN, dimM = A_.shape
     if _name == 'simplex':
         def J(q):
-            Fx = Fx_product(_A, q)
+            Fx = Fx_product(A_, q)
             Ax = Fx[:dimM]
             ATx = Fx[dimM:dimN+dimM]
             return np.amax(Ax) - np.amin(ATx)
@@ -363,6 +364,7 @@ def J_operator(self, _name, prox_g):
         return J, J_complete
     else :
         def J(q):
+            Fx = Fx_product(A_, q)
             return LA.norm(q - prox_g(q - Fx(q), 1))
         return J
 

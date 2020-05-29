@@ -6,10 +6,11 @@ import scipy as sp
 from scipy import linalg
 from scipy.sparse import random
 import numpy.linalg as LA
+from inspect import signature
 
 ## --------------------------------------------------------------------------------##
 
-def randQCQP(N_, M_, convex_, equality_):
+def randQCQP(N_, M_, convex_, equality_, L_):
     p = []
     q = []
     r = []
@@ -22,7 +23,7 @@ def randQCQP(N_, M_, convex_, equality_):
         p.append(np.maximum(p_temp, p_temp.transpose()))
     q.append(np.random.rand(N_))
     r.append(-1)
-    for i in range(1,M_):
+    for i in range(1,M_+1):
         if convex_:
             p_temp = np.random.rand(N_, N_)
             p_temp = np.dot(p_temp, p_temp.transpose())
@@ -35,7 +36,7 @@ def randQCQP(N_, M_, convex_, equality_):
         q.append(q_temp)
         r.append(-0.5*x_rand.T@p_temp@x_rand - q_temp@x_rand)
     if equality_:
-        A = np.random.rand(M_,N_)
+        A = np.random.rand(L_,N_)
         b = A@x_rand
         return p, q, r, A, b
     else:
@@ -70,31 +71,36 @@ def minus(x1_, x2_, y1_=None, y2_=None, u1_=None, u2_=None):
 
 def create_F(gradf_, hx_, gradh_, A_=None, b_=None):
     if A_ is None:
-        def Fx(x_,y_):
+        def Fx(x,y):
             if gradh_ is None or hx_ is None:
-                return gradf(x_), None, None
+                return gradf_(x), None, None
             else:
-                vec_prod_ = np.zeros(len(x_))
-                fy = np.zeros(len(y_))
-                for i in range(len(y_)):
-                    vec_prod_ += y_[i] * gradh[i](x_)
+                vec_prod = np.zeros(len(x))
+                fy = np.zeros(len(y))
+                for i in range(len(y)):
+                    vec_prod_ += y[i] * gradh[i](x)
                     fy[i] = -hx[i](x_)
-                fx = gradf(x_)+ sum(vec_prod_)
+                fx = gradf_(x)+ sum(vec_prod)
                 return fx, fy, None
     else:
-        def Fx(x_,y_,u_):
+        def Fx(x,y,u):
             if gradh_ is None or hx_ is None:
-                fx = gradf(x_)
-                fu = b-A@x_
+                fx = gradf_(x)
+                fu = b_-A_@x
                 return fx, None, fu
             else:
-                vec_prod_ = np.zeros(len(x_))
-                fy = np.zeros(len(y_))
-                for i in range(len(y_)):
-                    vec_prod_ += y_[i] * gradh[i](x_)
-                    fy[i] = -hx[i](x_)
-                fx = gradf(x_)+ sum(vec_prod_)+ A.T@u_
-                fu = b-A@x_
+                vec_prod = np.zeros(len(x))
+                fy = np.zeros(len(y))
+                for i in range(len(y)):
+                    vec_prod += y[i] * gradh_[i](x)
+                    fy[i] = -hx_[i](x)
+                
+                #print(sum(vec_prod).shape)
+                #print(u.shape)
+                #print(A_.T@u.shape)
+                    
+                fx = gradf_(x)+ sum(vec_prod)+ A_.T@u
+                fu = b_-A_@x
                 return fx, fy, fu
     return Fx
 
@@ -109,14 +115,13 @@ def create_J(gradf_, hx_, gradh_, proj_, A_=None, b_=None):
                 xp, yp, _ = minus(x, fx)
                 xp, yp, _ = operator_P(proj_, xp)
                 xp, yp, _ = minus(x, xp)
-                return np.linalg.norm(xp)
+                return np.linalg.norm(xp),None,None
             else:
                 fx, fy, _ = Fx(x,y)
-                print(fx, fy)
                 xp, yp, _ = minus(x, fx, y, fy)
                 xp, yp, _ = operator_P(proj_, xp, yp)
                 xp, yp, _ = minus(x, xp, y, yp)
-                return np.linalg.norm(xp) + np.linalg.norm(yp)
+                return np.linalg.norm(xp) + np.linalg.norm(yp),None,None
     else:
         Fx = create_F(gradf_, hx_, gradh_, A_, b_)
         def J(x,y,u):
@@ -124,11 +129,10 @@ def create_J(gradf_, hx_, gradh_, proj_, A_=None, b_=None):
                 something
             else:
                 fx, fy, fu = Fx(x,y,u)
-                print(fx, fy, fu)
                 xp, yp, up = minus(x, fx, y, fy, u, fu)
                 xp, yp, up = operator_P(proj_, xp, yp, up)
                 xp, yp, up = minus(x, xp, y, yp, u, up)
-                return np.linalg.norm(xp) + np.linalg.norm(yp) + np.linalg.norm(up)
+                return np.linalg.norm(xp) + np.linalg.norm(yp) + np.linalg.norm(up),None,None
     return J
 
 ## --------------------------------------------------------------------------------##
@@ -144,3 +148,6 @@ def operator_P(proj_, x_, y_=None, u_=None):
             return proj_(x_), y_, u_
         else:
             return proj_(x_), np.maximum(y_,0)
+
+        
+        

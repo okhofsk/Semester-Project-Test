@@ -17,7 +17,7 @@ class co_problem:
     """
     Class definition of constrained optimization library
     """
-    def __init__(self, fx_, hxs_=None, proj_=None, gradf_=None, gradhs_=None, A_=None, b_=None): #
+    def __init__(self, fx_, N_, hxs_=None, proj_=None, gradf_=None, gradhs_=None, A_=None, b_=None): #
         """
         Initialization of qcqp_problem class that containts:
 
@@ -49,6 +49,7 @@ class co_problem:
         Examples
         --------
         """
+        self.U = None
         ### Check "F" ###
         if isinstance(fx_, str):
             if fx_ is "name1":
@@ -95,6 +96,7 @@ class co_problem:
                 self.A = A_                                  #var
                 if isinstance(b_, (np.ndarray, np.generic)):
                     self.b = b_                                  #var
+                    self.U = len(b_)
                 elif b_ is None:
                     raise ValueError('"b": Cannot input matrix A without vector b. Please refer to the documentation.')
                 else:
@@ -102,7 +104,15 @@ class co_problem:
             else:
                 raise ValueError('"A"; Input of wrong format. Please refer to the documentation.')
         else:
-            raise ValueError('"fx"; Input of wrong format. Please refer to the documentation.') 
+            raise ValueError('"fx"; Necessary Input. Please refer to the documentation.') 
+        if N_ is None:
+            raise ValueError('"N"; Necessary Input. Please refer to the documentation.') 
+        elif isinstance(N_, int):
+            self.N = N_
+        else:
+            raise ValueError('"N"; Input of wrong format. Please refer to the documentation.')
+            
+            
         if proj_ is None:
             self.proj = None
         elif callable(proj_):
@@ -111,20 +121,24 @@ class co_problem:
             raise ValueError('"proj"; Input of wrong format. Please refer to the documentation.') 
             
         if self.A is None:
-            self.F = create_F(self.gradh, self.hx, self.gradh)
-            self.J = create_J(self.gradh, self.hx, self.gradh, self.proj)
+            self.F = create_F(self.gradf, self.hx, self.gradh)
+            self.J = create_J(self.gradf, self.hx, self.gradh, self.proj)
         else:
-            self.F = create_F(self.gradh, self.hx, self.gradh, self.A, self.b)
-            self.J = create_J(self.gradh, self.hx, self.gradh, self.proj, self.A, self.b)
+            self.F = create_F(self.gradf, self.hx, self.gradh, self.A, self.b)
+            self.J = create_J(self.gradf, self.hx, self.gradh, self.proj, self.A, self.b)
+            
+        self.Fz = set_z(self, self.F)
+        self.Jz = set_z(self, self.J)
 
 ## --------------------------------------------------------------------------------##
 
-    def get_parameters(self):
+    def get_parameters(self, separate_):
         """
         returns all parameters necessary to test solvers
 
         Parameters
         ----------
+            - separate_: boolean that checks if input vector z is in parts or together
 
         Returns
         -------
@@ -141,6 +155,36 @@ class co_problem:
         Examples
         --------
         """
-        return self.F, self.J
+        if separate_:
+            return self.F, self.J
+        else :
+            return self.Fz, self.Jz
+    
+## --------------------------------------------------------------------------------##
+
+def set_z(self, operator_):
+    nbr_params = len(signature(operator_).parameters)
+    if nbr_params is 2:
+        def oper(z):
+            x = z[0:self.N]
+            y = z[self.N:self.N+self.M]
+            fx, fy = operator_(x,y)
+            if fy is None:
+                return fx
+            return np.concatenate((fx,fy))
+        return oper
+    elif nbr_params is 3:
+        def oper(z):
+            x = z[0:self.N]
+            y = z[self.N:self.N+self.M]
+            u = z[self.N+self.M:self.N+self.M+self.U]
+            fx, fy, fu = operator_(x,y,u)
+            if fy is None:
+                return fx
+            return np.concatenate((fx,fy,fu))
+        return oper
+    else : 
+        raise ValueError('set_z(operator_); operator can only have either 2 or 3 inputs. Please refer to the documentation.') 
+    
 
       
