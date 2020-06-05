@@ -13,7 +13,7 @@ class mg_problem:
     """
     Class definition of matrix games library
     """
-    def __init__(self, A=None, proxg_str=None, size=None):
+    def __init__(self, A_=None, proxg_str_=None, size_=None):
         """
         Initialization of mg_problem class that containts:
         - A :       A matrix describing the problem
@@ -22,13 +22,16 @@ class mg_problem:
 
         Parameters
         ----------
-        A : ndarray
+        A_ : ndarray/string
+            either directly give the matrix A as a numpy array or use a string to 
+            choose one of the predefined matricies. For more information see the 
+            documenation on "create_A()".
         
-        size : tulpe/string
-            either define size of the A matrix as a tulpe or use string "small" for
+        size_ : tuple/string
+            either define size of the A matrix as a tuple or use string "small" for
             a 10x10 matrix size or "large" to have a matrix size of 1000x1000 
 
-        prox_str : string
+        prox_str_ : string
             string describing the proximal operator wanted. If "None" gives simplex
             Possibilities are:
             - "simplex"      : uses the simplex projection see the function 'projsplx'
@@ -49,30 +52,26 @@ class mg_problem:
         Examples
         --------
         """
-        if A is None:
-            self.A = create_A('rand')
-        #elif isinstance(A, str):
-        #    if isinstance(size, str):
-        #        if size == "large":
-        #            self.A = create_A(A, True)
-        #        elif size == "small": 
-        #            self.A = create_A(A, False)
-        #        else :
-        #            raise ValueError('Input string size unknown. Please refer to documentation.') 
-        #    else:
-        #        self.A = create_A(A, False, True, size)
+        
+        if isinstance(A_, (np.ndarray, np.generic)) or isinstance(A_, sp.sparse.coo_matrix):
+            self.A = A_
+        elif isinstance(A_, str):
+            if isinstance(size_, str) or isinstance(size_, tuple):
+                self.A = create_A(A_, size_)
+            else :
+                self.A = create_A(A_)
         else:
-            self.A = A
+            self.A = create_A('rand')
         self.F = create_F(self.A)
-        if proxg_str == None:
+        if proxg_str_ == None:
             self.is_simplex = True
             self.proxg = proxg_operator('simplex')
             self.J, self.J_complete = J_operator(self.A, 'simplex', None)
-        else:
-            self.proxg = proxg_operator(proxg_str)
-            if proxg_str == 'simplex':
+        elif isinstance(proxg_str_, str):
+            self.proxg = proxg_operator(proxg_str_)
+            if proxg_str_ == 'simplex':
                 self.is_simplex = True
-                self.J, self.J_complete = J_operator(self.A, proxg_str, None)
+                self.J, self.J_complete = J_operator(self.A, proxg_str_, None)
             else :
                 self.is_simplex = False
                 self.J = J_operator(self.A, 'norm', self.proxg)

@@ -10,7 +10,7 @@ from inspect import signature
 
 ## --------------------------------------------------------------------------------##
 
-def randQCQP(N_, M_, convex_, equality_, L_):
+def randQCQP(N_, M_, convex_, equality_, L_=1):
     p = []
     q = []
     r = []
@@ -22,7 +22,7 @@ def randQCQP(N_, M_, convex_, equality_, L_):
         p_temp = np.random.rand(N_, N_)
         p.append(np.maximum(p_temp, p_temp.transpose()))
     q.append(np.random.rand(N_))
-    r.append(-1)
+    r.append(0)
     for i in range(1,M_+1):
         if convex_:
             p_temp = np.random.rand(N_, N_)
@@ -41,7 +41,28 @@ def randQCQP(N_, M_, convex_, equality_, L_):
         return p, q, r, A, b
     else:
         return p, q, r, None, None
-
+    
+def randQCQPmat(N_, M_, convex_, equality_, L_=1):
+    p = []
+    q = []
+    r = []
+    x_rand = np.random.rand(N_)
+    q_temp = np.random.rand(M_+1, N_)
+    p_temp = np.random.rand(M_+1, N_, N_)
+    if convex_:
+        p_temp = np.matmul(p_temp, np.transpose(p_temp, (0,2,1)))
+    else :
+        p_temp = np.maximum(p_temp, np.transpose(p_temp, (0,2,1)))
+    r_temp = -0.5*np.transpose(x_rand)@p_temp@x_rand - q_temp@x_rand
+    r_temp[0] = 0
+    
+    if equality_:
+        A = np.random.rand(L_,N_)
+        b = A@x_rand
+        return p_temp, q_temp, r_temp, A, b
+    else:
+        return p_temp, q_temp, r_temp, None, None
+    
 ## --------------------------------------------------------------------------------##
 
 def toQCQP(P_, q_, r_):
@@ -55,6 +76,16 @@ def toQCQP(P_, q_, r_):
         hxs.append(hx)
         gradhs.append(gradh)
     return fx, hxs, gradf, gradhs
+
+def toQCQPmat(P_,q_,r_):
+    full = lambda x,i: 0.5*x.T@P_[i]@x + q_[i]@x + r_[i]
+    gradfull = lambda x,i: x.T@P_[i] + q_[i]
+    fx = lambda x: full(x,i)
+    [lambda x: full(x,i) for i in range(1,len(P_))]
+    hx = lambda x: 1
+    fx = lambda x: full(x,i)
+    fx = lambda x: full(x,i)
+    return full
 
 ## --------------------------------------------------------------------------------##
 
@@ -112,9 +143,9 @@ def create_J(gradf_, hx_, gradh_, proj_, A_=None, b_=None):
         def J(x,y):
             if hx_ is None or gradh_ is None:
                 fx, _, _ = Fx(x,y)
-                xp, yp, _ = minus(x, fx)
-                xp, yp, _ = operator_P(proj_, xp)
-                xp, yp, _ = minus(x, xp)
+                xp, _, _ = minus(x, fx)
+                xp, _, _ = operator_P(proj_, xp)
+                xp, _, _ = minus(x, xp)
                 return np.linalg.norm(xp),None,None
             else:
                 fx, fy, _ = Fx(x,y)
@@ -126,7 +157,11 @@ def create_J(gradf_, hx_, gradh_, proj_, A_=None, b_=None):
         Fx = create_F(gradf_, hx_, gradh_, A_, b_)
         def J(x,y,u):
             if hx_ is None or gradh_ is None:
-                something
+                fx, _, fu = Fx(x,y,u)
+                xp, up, _ = minus(x, fx, u, fu)
+                xp, _, up = operator_P(proj_, xp, None, up)
+                xp, up, _ = minus(x, xp, u, up)
+                return np.linalg.norm(xp) + np.linalg.norm(up),None,None
             else:
                 fx, fy, fu = Fx(x,y,u)
                 xp, yp, up = minus(x, fx, y, fy, u, fu)

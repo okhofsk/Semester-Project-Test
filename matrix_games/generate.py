@@ -8,7 +8,7 @@ from random import uniform
 from time import perf_counter
 from scipy.sparse import random
 
-def create_A(_name, _large=False, _custom=False, _tulpe=(0,0)):
+def create_A(name_, size_="small"):
     """
     External function for matrix games library'
     
@@ -24,14 +24,10 @@ def create_A(_name, _large=False, _custom=False, _tulpe=(0,0)):
     
     Parameters
     ----------
-    _name : string
+    name_ : string
         refernce string of the matrix to be returned
-    _large : string
-        either small (10x10) or large (1000x1000) matrix, default False
-    _custom : string
-        define own matrix shape set to true and add the shape as a tulpe, default False
-    _tulpe : tulpe 
-        define shape of matrix only if _custom is True, default (0,0)
+    size_ : tuple/string 
+        define shape of matrix only -----, default "small"
         
     Returns
     -------
@@ -40,7 +36,7 @@ def create_A(_name, _large=False, _custom=False, _tulpe=(0,0)):
     Raises
     ------
     ValueError: unknown string
-        If _name is not one of the stored strings and defined A matices.
+        If name_ is not one of the stored strings and defined A matices.
         
     Notes
     -----
@@ -54,58 +50,44 @@ def create_A(_name, _large=False, _custom=False, _tulpe=(0,0)):
     Examples
     --------
     """
-    if _custom == True :
-        if _tulpe == (0,0):
-            raise ValueError('Input a tulpe as the size of your A matrix. Please refer to documentation.') 
-        else : 
-            if _name is "rock_paper_scissor":
-                return np.array([[0, -1, 1],[1, 0, -1],[-1, 1, 0]])
-            elif _name is "normandy":
-                return np.array([[13, 29, 8, 12, 16, 23],[18, 22, 21, 22, 29, 31],[18, 22, 31, 31, 27, 37],[11, 22, 12, 21, 21, 26],[18, 16, 19, 14, 19, 28],[23, 22, 19, 23, 30, 34]])
-            elif _name is "diag": 
-                return np.diagflat(create_A_rand(1, _tulpe[1], False))
-            elif _name is "triangular":
-                return np.triu(create_A_rand(_tulpe[0], _tulpe[1], False)) 
-            elif _name is "hide_and_seek":
-                return np.random.randint(2, size=_tulpe)
-            elif _name is "one_plus":
-                ones = np.ones((_tulpe[0], _tulpe[0]))
-                return (-2)*ones + np.diag(np.diag(ones, k=1), k=1) + np.diag(np.diag(ones, k=-1), k=-1) + np.diag(np.diag(ones))*2
-            elif _name is "matching_pennies":
-                return create_rand_pennies_mat(_tulpe[0])
-            elif _name is "rand":
-                return create_A_rand(_tulpe[0], _tulpe[1],False)
-            elif _name is "rand_sparse":
-                return create_A_rand(_tulpe[0], _tulpe[1],True)
+    if isinstance(name_, str):
+        if isinstance(size_, tuple) :
+            if size_ is (0,0):
+                raise ValueError('Input a tuple as the size of your A matrix. Please refer to documentation.') 
+            else : 
+                size = size_
+        elif isinstance (size_, str) :
+            if size_  is "large":
+                size = (1000,1000)
+            elif size_ is "small": 
+                size = (10,10)
             else:
-                raise ValueError('Input string unknown. Please refer to documentation.') 
-    else :
-        if _large == True:
-            tulpe = (1000,1000)
-        else : 
-            tulpe = (10,10)
-        if _name is "rock_paper_scissor":
-            return np.array([[0, -1, 1],[1, 0, -1],[-1, 1, 0]])
-        elif _name is "normandy":
-            return np.array([[13, 29, 8, 12, 16, 23],[18, 22, 21, 22, 29, 31],[18, 22, 31, 31, 27, 37],[11, 22, 12, 21, 21, 26],[18, 16, 19, 14, 19, 28],[23, 22, 19, 23, 30, 34]])
-        elif _name is "diag": 
-            return np.diag(create_A_rand(1, tulpe[1], False))
-        elif _name is "triangular":
-            return np.triu(create_A_rand(tulpe[0], tulpe[1], False)) 
-        elif _name is "hide_and_seek":
-            return np.random.randint(2, size=tulpe)
-        elif _name is "one_plus":
-            ones = np.ones((tulpe[0], tulpe[0]))
-            return (-2)*ones + np.diag(np.diag(ones, k=1), k=1) + np.diag(np.diag(ones, k=-1), k=-1) + np.diag(np.diag(ones))*2
-        elif _name is "matching_pennies":
-            return create_rand_pennies_mat(tulpe[0])
-        elif _name is "rand":
-            return create_A_rand(tulpe[0], tulpe[1],False)
-        elif _name is "rand_sparse":
-            return create_A_rand(tulpe[0], tulpe[1],True)
+                raise ValueError('Input string size_ unknown. Please refer to documentation.') 
         else:
-            raise ValueError('Input string unknown. Please refer to documentation.') 
-    
+            raise ValueError('Input "size_" unknown input format. Please refer to the documentation.')
+        if name_ is "rock_paper_scissor":
+            return np.array([[0, -1, 1],[1, 0, -1],[-1, 1, 0]])            
+        elif name_ is "normandy":
+            return np.array([[13, 29, 8, 12, 16, 23],[18, 22, 21, 22, 29, 31],[18, 22, 31, 31, 27, 37],[11, 22, 12, 21, 21, 26],[18, 16, 19, 14, 19, 28],[23, 22, 19, 23, 30, 34]])
+        elif name_ is "diag": 
+            return np.diagflat(create_A_rand(1, size[1], False))
+        elif name_ is "triangular":
+            return np.triu(create_A_rand(size[0], size[1], False)) 
+        elif name_ is "hide_and_seek":
+            return np.random.randint(2, size=size)
+        elif name_ is "one_plus":
+            ones = np.ones((size[0], size[0]))
+            return (-2)*ones + np.diag(np.diag(ones, k=1), k=1) + np.diag(np.diag(ones, k=-1), k=-1) + np.diag(np.diag(ones))*2
+        elif name_ is "matching_pennies":
+            return create_rand_pennies_mat(size[0])
+        elif name_ is "rand":
+            return create_A_rand(size[0], size[1],False)
+        elif name_ is "rand_sparse":
+            return create_A_rand(size[0], size[1],True)
+        else:
+            raise ValueError('Input string "name_" unknown. Please refer to the documentation.') 
+    else:
+        raise ValueError('Input "name_" unknown input format. Please refer to the documentation.')    
 
 ## --------------------------------------------------------------------------------##
   
@@ -151,7 +133,7 @@ def create_A_rand(n, m, sparsity):
 
 ## --------------------------------------------------------------------------------##
 
-def create_F(a):
+def create_F(A_):
     """
     External function for matrix games library'
     
@@ -162,7 +144,7 @@ def create_F(a):
     
     Parameters
     ----------
-    a : ndarray/sparse.csr[1]
+    A_ : ndarray/sparse.csr[1]
         the matrix A from the matrix games problem in sparse or ndarray form
         
     Returns
@@ -183,10 +165,10 @@ def create_F(a):
     Examples
     --------
     """
-    if sp.sparse.issparse(a):
+    if sp.sparse.issparse(A_):
         mat_a = np.copy(a.toarray())
     else:
-        mat_a = np.copy(a)
+        mat_a = np.copy(A_)
     zero_matrix_top = np.zeros((mat_a.shape[1], mat_a.shape[1]))
     zero_matrix_bot = np.zeros((mat_a.shape[0], mat_a.shape[0]))
     left_F = np.concatenate((zero_matrix_top, -mat_a))
@@ -195,7 +177,7 @@ def create_F(a):
 
 ## --------------------------------------------------------------------------------##
 
-def create_F_rand(n, m, sparsity):
+def create_F_rand(n_, m_, sparsity_):
     """
     External function for matrix games library'
     
@@ -235,15 +217,15 @@ def create_F_rand(n, m, sparsity):
     Examples
     --------
     """
-    if sparsity:
-        mat_a = create_A_rand(n,m,sparsity).toarray()
+    if sparsity_:
+        mat_a = create_A_rand(n_,m_,sparsity).toarray()
     else:
-        mat_a = create_A_rand(n,m,sparsity)
+        mat_a = create_A_rand(n_,m_,sparsity)
     return create_F(mat_a)
 
 ## --------------------------------------------------------------------------------##
 
-def Fx_product(a, x):
+def Fx_product(A_, x_):
     """
     External function for matrix games library'
     
@@ -253,9 +235,9 @@ def Fx_product(a, x):
     
     Parameters
     ----------
-    a : ndarray/sparse.csr[1]
+    A_ : ndarray/sparse.csr[1]
         the matrix A from the matrix games problem in sparse or ndarray form
-    x : ndarray
+    x_ : ndarray
         the vector x 
         
     Returns
@@ -276,15 +258,15 @@ def Fx_product(a, x):
     Examples
     --------
     """
-    x_ = np.reshape(x, (len(x),1))
-    (dimN, dimM) = a.shape
-    x_top = a.T@x_[dimM:dimN+dimM]
-    x_bot = -a@x_[:dimM]
+    x = np.reshape(x_, (len(x_),1))
+    (dimN, dimM) = A_.shape
+    x_top = A_.T@x[dimM:dimN+dimM]
+    x_bot = -A_@x[:dimM]
     return np.append(x_top, x_bot)
 
 ## --------------------------------------------------------------------------------##
 
-def Fx(a):
+def Fx(A_):
     """
     External function for matrix games library'
     
@@ -292,7 +274,7 @@ def Fx(a):
     
     Parameters
     ----------
-    a : ndarray/sparse.csr[1]
+    A_ : ndarray/sparse.csr[1]
         the matrix A from the matrix games problem in sparse or ndarray form
         
     Returns
@@ -314,12 +296,12 @@ def Fx(a):
     --------
     """
     def F(q):
-        return Fx_product(a, q)
+        return Fx_product(A_, q)
     return F
     
 ## --------------------------------------------------------------------------------##
 
-def J_operator(A_, _name, prox_g): 
+def J_operator(A_, name_, prox_g_): 
     """
     External function for matrix games library'
 
@@ -327,11 +309,11 @@ def J_operator(A_, _name, prox_g):
 
     Parameters
     ----------
-    a : ndarray/sparse.csr[1]
+    A_ : ndarray/sparse.csr[1]
         the matrix A from the matrix games problem in sparse or ndarray form
-    _name : string
+    name_ : string
         the name of the J operator to use
-    prox_g : function
+    prox_g_ : function
         the proximal operator function to use
 
     Returns
@@ -353,7 +335,7 @@ def J_operator(A_, _name, prox_g):
     --------
     """
     dimN, dimM = A_.shape
-    if _name == 'simplex':
+    if name_ == 'simplex':
         def J(q):
             Fx = Fx_product(A_, q)
             Ax = Fx[:dimM]
@@ -365,12 +347,12 @@ def J_operator(A_, _name, prox_g):
     else :
         def J(q):
             Fx = Fx_product(A_, q)
-            return LA.norm(q - prox_g(q - Fx(q), 1))
+            return LA.norm(q - prox_g_(q - Fx(q), 1))
         return J
 
 ## --------------------------------------------------------------------------------##
 
-def proxg_operator(_name):
+def proxg_operator(name_):
     """
     External function for matrix games library'
     
@@ -381,7 +363,7 @@ def proxg_operator(_name):
     
     Parameters
     ----------
-    _name : string
+    name_ : string
         the name of the proximal operator to use
         
     Returns
@@ -392,7 +374,7 @@ def proxg_operator(_name):
     Raises
     ------
     ValueError: unknown string
-        If _name is not one of the stored strings and defined proxg_operators.   
+        If name_ is not one of the stored strings and defined proxg_operators.   
         
     Notes
     -----
@@ -403,22 +385,22 @@ def proxg_operator(_name):
     Examples
     --------
     """
-    if _name is "simplex":
-        def _prox_g(q, eps): 
+    if name_ is "simplex":
+        def prox_g(q, eps): 
             return projsplx(q)
-    elif  _name is "fmax":
-        def _prox_g(q, eps):
+    elif  name_ is "fmax":
+        def prox_g(q, eps):
             return np.fmax(q,0)
-    elif  _name is "none":
-        def _prox_g(q, eps):
+    elif  name_ is "none":
+        def prox_g(q, eps):
             return q 
     else:
         raise ValueError('Input string unknown. Please refer to documentation.') 
-    return _prox_g
+    return prox_g
 
 ## --------------------------------------------------------------------------------##
 
-def projsplx(q):
+def projsplx(q_):
     """
     External function for matrix games library'
     
@@ -447,19 +429,19 @@ def projsplx(q):
     Examples
     --------
     """
-    _n = len(q)
-    q_sorted = np.sort(q)
-    _t = -1
-    _zeros = np.zeros(_n)
-    for i in reversed(range(len(q))):
-        _t = np.sum(q[i+1:]-1)/(_n-i)
-        if _t >= q[i]:
-            return np.fmax(q-_t,_zeros)
-    return np.fmax(q-np.sum(q-1)/_n,_zeros)  
+    n = len(q_)
+    q_sorted = np.sort(q_)
+    t = -1
+    zeros = np.zeros(n)
+    for i in reversed(range(n)):
+        t = np.sum(q_[i+1:]-1)/(n-i)
+        if t >= q_[i]:
+            return np.fmax(q_-t,zeros)
+    return np.fmax(q_-np.sum(q_-1)/n,zeros)  
 
-def create_rand_pennies_mat(size0):
-    G = nx.fast_gnp_random_graph(size0, 1.0, 78456, True)
-    W = np.zeros(size0)
+def create_rand_pennies_mat(size0_):
+    G = nx.fast_gnp_random_graph(size0_, 1.0, 78456, True)
+    W = np.zeros(size0_)
     u0 = -1
     for (u, v) in G.edges():
         wij = np.random.randint(0,10)
@@ -471,11 +453,11 @@ def create_rand_pennies_mat(size0):
             W[u] = wij
 
 
-    a = np.zeros((size0,size0))
+    a = np.zeros((size0_,size0_))
     for (u,v) in G.edges():
         a[u,v] = G.edges[u,v]['weight']
 
-    for i in range(size0):
+    for i in range(size0_):
         wii = np.random.randint(0,10)
         a[i,i] = wii - W[i]
     return a
