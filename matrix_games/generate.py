@@ -346,8 +346,8 @@ def J_operator(A_, name_, prox_g_):
         return J, J_complete
     else :
         def J(q):
-            Fx = Fx_product(A_, q)
-            return LA.norm(q - prox_g_(q - Fx(q), 1))
+            F = Fx(A_)
+            return LA.norm(q - prox_g_(q - F(q), 1))
         return J
 
 ## --------------------------------------------------------------------------------##
@@ -400,7 +400,7 @@ def proxg_operator(name_):
 
 ## --------------------------------------------------------------------------------##
 
-def projsplx(q_):
+def projsplx(v, s=1):
     """
     External function for matrix games library'
     
@@ -428,16 +428,33 @@ def projsplx(q_):
     
     Examples
     --------
-    """
     n = len(q_)
     q_sorted = np.sort(q_)
     t = -1
     zeros = np.zeros(n)
-    for i in reversed(range(n)):
+    for i in reversed(range(n-1)):
         t = np.sum(q_[i+1:]-1)/(n-i)
         if t >= q_[i]:
             return np.fmax(q_-t,zeros)
-    return np.fmax(q_-np.sum(q_-1)/n,zeros)  
+    return np.fmax(q_-np.sum(q_-1)/n,zeros) 
+    """ 
+    assert s > 0, "Radius s must be strictly positive (%d <= 0)" % s
+    n, = v.shape  # will raise ValueError if v is not 1-D
+    # check if we are already on the simplex
+    if v.sum() == s and np.alltrue(v >= 0):
+        # best projection: itself!
+        return v
+    # get the array of cumulative sums of a sorted (decreasing) copy of v
+    u = np.sort(v)[::-1]
+    cssv = np.cumsum(u)
+    # get the number of > 0 components of the optimal solution
+    rho = np.nonzero(u * np.arange(1, n+1) > (cssv - s))[0][-1]
+    # compute the Lagrange multiplier associated to the simplex constraint
+    theta = (cssv[rho] - s) / (rho + 1.0)
+    # compute the projection by thresholding v using theta
+    w = (v - theta).clip(min=0)
+    return w
+
 
 def create_rand_pennies_mat(size0_):
     G = nx.fast_gnp_random_graph(size0_, 1.0, 78456, True)

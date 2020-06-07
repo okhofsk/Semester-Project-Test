@@ -49,6 +49,8 @@ def randQCQPmat(N_, M_, convex_, equality_, L_=1):
     x_rand = np.random.rand(N_)
     q_temp = np.random.rand(M_+1, N_)
     p_temp = np.random.rand(M_+1, N_, N_)
+    import time
+    start_time = time.time()
     if convex_:
         p_temp = np.matmul(p_temp, np.transpose(p_temp, (0,2,1)))
     else :
@@ -59,6 +61,8 @@ def randQCQPmat(N_, M_, convex_, equality_, L_=1):
     if equality_:
         A = np.random.rand(L_,N_)
         b = A@x_rand
+        
+        print("--- %s seconds ---" % (time.time() - start_time))
         return p_temp, q_temp, r_temp, A, b
     else:
         return p_temp, q_temp, r_temp, None, None
