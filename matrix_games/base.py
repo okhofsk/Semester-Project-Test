@@ -71,10 +71,17 @@ class mg_problem:
             self.proxg = proxg_operator(proxg_str_)
             if proxg_str_ == 'simplex':
                 self.is_simplex = True
-                self.J, self.J_complete = J_operator(self.A, proxg_str_, None)
+                self.J, self.J_complete = J_operator(self.A, proxg_str_, self.proxg)
             else :
                 self.is_simplex = False
-                self.J = J_operator(self.A, 'norm', self.proxg)
+                self.J, self.J_complete = J_operator(self.A, 'norm', self.proxg)
+
+## --------------------------------------------------------------------------------##
+
+    def __str__(self):
+        q0 = np.ones(self.A.shape[0] + self.A.shape[1])
+        return "Matrix A: " + str(self.A) + "\n Matrix F: " + str(self.F) + "\n Proximal Operator: " + str(self.proxg(q0,0)) + "\n Simplex?: " + str(self.is_simplex) + "\n J Operator: " + str(self.J(q0)) + "\n"
+        
 
 ## --------------------------------------------------------------------------------##
 
@@ -104,7 +111,7 @@ class mg_problem:
         if self.is_simplex:
             return Fx(self.A), self.J, self.J_complete, self.proxg
         else:
-            return Fx(self.A), self.J, self.proxg
+            return Fx(self.A), self.J, None, self.proxg
 
 ## --------------------------------------------------------------------------------##
 
@@ -136,7 +143,7 @@ class mg_problem:
         if self.is_simplex:
             return self.A, self.F, Fx(self.A), self.J, self.J_complete, self.proxg
         else: 
-            return self.A, self.F, Fx(self.A), self.J, self.proxg
+            return self.A, self.F, Fx(self.A), self.J, None,  self.proxg
         
 
 

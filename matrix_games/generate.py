@@ -65,24 +65,24 @@ def create_A(name_, size_="small"):
                 raise ValueError('Input string size_ unknown. Please refer to documentation.') 
         else:
             raise ValueError('Input "size_" unknown input format. Please refer to the documentation.')
-        if name_ is "rock_paper_scissor":
+        if name_ == "rock_paper_scissor":
             return np.array([[0, -1, 1],[1, 0, -1],[-1, 1, 0]])            
-        elif name_ is "normandy":
+        elif name_ == "normandy":
             return np.array([[13, 29, 8, 12, 16, 23],[18, 22, 21, 22, 29, 31],[18, 22, 31, 31, 27, 37],[11, 22, 12, 21, 21, 26],[18, 16, 19, 14, 19, 28],[23, 22, 19, 23, 30, 34]])
-        elif name_ is "diag": 
+        elif name_ == "diag": 
             return np.diagflat(create_A_rand(1, size[1], False))
-        elif name_ is "triangular":
+        elif name_ == "triangular":
             return np.triu(create_A_rand(size[0], size[1], False)) 
-        elif name_ is "hide_and_seek":
+        elif name_ == "hide_and_seek":
             return np.random.randint(2, size=size)
-        elif name_ is "one_plus":
+        elif name_ == "one_plus":
             ones = np.ones((size[0], size[0]))
             return (-2)*ones + np.diag(np.diag(ones, k=1), k=1) + np.diag(np.diag(ones, k=-1), k=-1) + np.diag(np.diag(ones))*2
-        elif name_ is "matching_pennies":
+        elif name_ == "matching_pennies":
             return create_rand_pennies_mat(size[0])
-        elif name_ is "rand":
+        elif name_ == "rand":
             return create_A_rand(size[0], size[1],False)
-        elif name_ is "rand_sparse":
+        elif name_ == "rand_sparse":
             return create_A_rand(size[0], size[1],True)
         else:
             raise ValueError('Input string "name_" unknown. Please refer to the documentation.') 
@@ -338,9 +338,11 @@ def J_operator(A_, name_, prox_g_):
     if name_ == 'simplex':
         def J(q):
             Fx = Fx_product(A_, q)
-            Ax = Fx[:dimM]
-            ATx = Fx[dimM:dimN+dimM]
-            return np.amax(Ax) - np.amin(ATx)
+            ATx = Fx[:dimM]
+            Ax = Fx[dimM:dimN+dimM]
+            print(ATx)
+            print(Ax)
+            return np.amax(Ax) - np.amin(ATx) 
         def J_complete(q, ax, ay):
             return np.amax(ax) - np.amin(ay)
         return J, J_complete
@@ -348,7 +350,7 @@ def J_operator(A_, name_, prox_g_):
         def J(q):
             F = Fx(A_)
             return LA.norm(q - prox_g_(q - F(q), 1))
-        return J
+    return J, None
 
 ## --------------------------------------------------------------------------------##
 
@@ -385,13 +387,13 @@ def proxg_operator(name_):
     Examples
     --------
     """
-    if name_ is "simplex":
+    if name_ == "simplex":
         def prox_g(q, eps): 
             return projsplx(q)
-    elif  name_ is "fmax":
+    elif  name_ == "fmax":
         def prox_g(q, eps):
             return np.fmax(q,0)
-    elif  name_ is "none":
+    elif  name_ == "none":
         def prox_g(q, eps):
             return q 
     else:
