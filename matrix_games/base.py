@@ -68,7 +68,7 @@ class mg_problem:
             self.proxg = proxg_operator('simplex')
             self.J, self.J_complete = J_operator(self.A, 'simplex', None)
         elif isinstance(proxg_str_, str):
-            self.proxg = proxg_operator(proxg_str_)
+            self.proxg = proxg_operator(proxg_str_, self.A)
             if proxg_str_ == 'simplex':
                 self.is_simplex = True
                 self.J, self.J_complete = J_operator(self.A, proxg_str_, self.proxg)

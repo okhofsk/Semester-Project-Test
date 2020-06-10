@@ -260,7 +260,7 @@ def Fx_product(A_, x_):
     """
     x = np.reshape(x_, (len(x_),1))
     (dimN, dimM) = A_.shape
-    x_top = A_.T@x[dimM:dimN+dimM]
+    x_top = A_.T@x[dimM:]
     x_bot = -A_@x[:dimM]
     return np.append(x_top, x_bot)
 
@@ -337,12 +337,13 @@ def J_operator(A_, name_, prox_g_):
     dimN, dimM = A_.shape
     if name_ == 'simplex':
         def J(q):
+            #x = prox_g_(q[:dimM],1)
+            #y = prox_g_(q[dimM:dimN+dimM],1)
+            #q_temp = np.concatenate((x,y))
             Fx = Fx_product(A_, q)
-            ATx = Fx[:dimM]
-            Ax = Fx[dimM:dimN+dimM]
-            print(ATx)
-            print(Ax)
-            return np.amax(Ax) - np.amin(ATx) 
+            ATy = Fx[:dimM]
+            Ax = -Fx[dimM:]
+            return np.amax(Ax) - np.amin(ATy) 
         def J_complete(q, ax, ay):
             return np.amax(ax) - np.amin(ay)
         return J, J_complete
@@ -354,7 +355,7 @@ def J_operator(A_, name_, prox_g_):
 
 ## --------------------------------------------------------------------------------##
 
-def proxg_operator(name_):
+def proxg_operator(name_, A_):
     """
     External function for matrix games library'
     
@@ -387,9 +388,12 @@ def proxg_operator(name_):
     Examples
     --------
     """
+    dimN, dimM = A_.shape
     if name_ == "simplex":
         def prox_g(q, eps): 
-            return projsplx(q)
+            x = q[:dimM]
+            y = q[dimM:]
+            return np.concatenate((projsplx(x),projsplx(y)))
     elif  name_ == "fmax":
         def prox_g(q, eps):
             return np.fmax(q,0)

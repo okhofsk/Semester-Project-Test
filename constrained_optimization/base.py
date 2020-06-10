@@ -61,8 +61,8 @@ class co_problem:
             if hxs_ is None:
                 self.hx = None
                 self.gradh = None
-            elif isinstance(hxs_, list):
-                for i in range(len(hxs_)):
+            elif isinstance(hxs_, dict):
+                for i in range(1,len(hxs_)+1):
                     if not callable(hxs_[i]):
                         raise ValueError('"hx"; Input of wrong format. Please refer to the documentation.') 
                 self.hx = hxs_                               #var
@@ -70,11 +70,11 @@ class co_problem:
                 ### Check "gradh" ###
                 if gradhs_ is None:
                     self.gradh = []
-                    for i in range(len(self.hx)):
+                    for i in range(1,len(self.hx)+1):
                         gradhi = grad(self.hx[i])
                         self.gradh.append(gradhi)
-                elif isinstance(gradhs_, list):
-                    for i in range(len(gradhs_)):
+                elif isinstance(gradhs_, dict):
+                    for i in range(1,len(gradhs_)+1):
                         if not callable(gradhs_[i]):
                             raise ValueError('"gradh"; Input of wrong format. Please refer to the documentation.') 
                     self.gradh = gradhs_                         #var
@@ -122,13 +122,22 @@ class co_problem:
             
         if self.A is None:
             self.F = create_F(self.gradf, self.hx, self.gradh)
-            self.J = create_J(self.gradf, self.hx, self.gradh, self.proj)
+            self.J = create_J_int(self)
+            #self.J = create_J(self.gradf, self.hx, self.gradh, self.proj)
         else:
             self.F = create_F(self.gradf, self.hx, self.gradh, self.A, self.b)
-            self.J = create_J(self.gradf, self.hx, self.gradh, self.proj, self.A, self.b)
+            self.J = create_J_int(self)
+            #self.J = create_J(self.gradf, self.hx, self.gradh, self.proj, self.A, self.b)
             
         self.Fz = set_z(self, self.F)
         self.Jz = set_z(self, self.J)
+        self.prox = proximal(self)
+
+## --------------------------------------------------------------------------------##
+
+    def __str__(self):
+        q0 = np.ones(self.A.shape[0] + self.A.shape[1])
+        return "string of class to be added"
 
 ## --------------------------------------------------------------------------------##
 
@@ -166,25 +175,41 @@ def set_z(self, operator_):
     nbr_params = len(signature(operator_).parameters)
     if nbr_params is 2:
         def oper(z):
-            x = z[0:self.N]
-            y = z[self.N:self.N+self.M]
-            fx, fy = operator_(x,y)
-            if fy is None:
-                return fx
-            return np.concatenate((fx,fy))
+            if len(z) == self.N+self.M:
+                x = z[0:self.N]
+                y = z[self.N:self.N+self.M]
+                fx, fy, _ = operator_(x,y)
+                if fy is None:
+                    return fx
+                return np.concatenate((fx,fy))
+            else:
+                raise ValueError('set_z(operator_); len of z not correct. Please refer to the documentation.')  
         return oper
     elif nbr_params is 3:
         def oper(z):
-            x = z[0:self.N]
-            y = z[self.N:self.N+self.M]
-            u = z[self.N+self.M:self.N+self.M+self.U]
-            fx, fy, fu = operator_(x,y,u)
-            if fy is None:
-                return fx
-            return np.concatenate((fx,fy,fu))
+            if len(z) == self.N+self.M+self.U:
+                x = z[0:self.N]
+                y = z[self.N:self.N+self.M]
+                u = z[self.N+self.M:self.N+self.M+self.U]
+                fx, fy, fu = operator_(x,y,u)
+                if fy is None:
+                    return fx
+                return np.concatenate((fx,fy,fu))
+            else:
+                raise ValueError('set_z(operator_); len of z not correct. Please refer to the documentation.') 
         return oper
     else : 
         raise ValueError('set_z(operator_); operator can only have either 2 or 3 inputs. Please refer to the documentation.') 
     
+## --------------------------------------------------------------------------------##
+
+def proximal(self):
+    if self.A is None:
+        def prox(x,y):
+            return operator_P(self.proj, x, y, None)
+    else:
+        def prox(x,y,u):
+            return operator_P(self.proj, x, y, u)
+    return set_z(self,prox)
 
       
