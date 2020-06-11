@@ -62,25 +62,28 @@ class mg_problem:
                 self.A = create_A(A_)
         else:
             self.A = create_A('rand')
-        self.F = create_F(self.A)
+        (self.dimN, self.dimM) = self.A.shape
+        self.F = intern_Fx(self)
+        self.Fx = None
         if proxg_str_ == None:
             self.is_simplex = True
             self.proxg = proxg_operator('simplex')
             self.J, self.J_complete = J_operator(self.A, 'simplex', None)
         elif isinstance(proxg_str_, str):
-            self.proxg = proxg_operator(proxg_str_, self.A)
+            self.name = proxg_str_
+            self.proxg = intern_proxg(self)
             if proxg_str_ == 'simplex':
                 self.is_simplex = True
-                self.J, self.J_complete = J_operator(self.A, proxg_str_, self.proxg)
+                self.J, self.J_complete = intern_J(self)
             else :
                 self.is_simplex = False
-                self.J, self.J_complete = J_operator(self.A, 'norm', self.proxg)
+                self.J, self.J_complete = intern_J(self)
 
 ## --------------------------------------------------------------------------------##
 
     def __str__(self):
         q0 = np.ones(self.A.shape[0] + self.A.shape[1])
-        return "Matrix A: " + str(self.A) + "\n Matrix F: " + str(self.F) + "\n Proximal Operator: " + str(self.proxg(q0,0)) + "\n Simplex?: " + str(self.is_simplex) + "\n J Operator: " + str(self.J(q0)) + "\n"
+        return "Matrix A: " + str(self.A) + "\n Matrix F: " + str(create_F(self.A)) + "\n Proximal Operator: " + str(self.proxg(q0,0)) + "\n Simplex?: " + str(self.is_simplex) + "\n J Operator: " + str(self.J(q0)) + "\n"
         
 
 ## --------------------------------------------------------------------------------##
@@ -109,9 +112,9 @@ class mg_problem:
         --------
         """
         if self.is_simplex:
-            return Fx(self.A), self.J, self.J_complete, self.proxg
+            return self.F, self.J, self.J_complete, self.proxg
         else:
-            return Fx(self.A), self.J, None, self.proxg
+            return self.F, self.J, None, self.proxg
 
 ## --------------------------------------------------------------------------------##
 
@@ -141,9 +144,160 @@ class mg_problem:
         --------
         """
         if self.is_simplex:
-            return self.A, self.F, Fx(self.A), self.J, self.J_complete, self.proxg
+            return self.A, self.F, create_F(self.A), self.J, self.J_complete, self.proxg
         else: 
-            return self.A, self.F, Fx(self.A), self.J, None,  self.proxg
+            return self.A, self.F, create_F(self.A), self.J, None,  self.proxg
+
+## --------------------------------------------------------------------------------##
+
+def intern_Fx(self):
+    """
+    External function for matrix games library'
+    
+    Computes the Fx product using the matrix a and the vector x. By using the nature of the 
+    F matrix we can make the operation more efficient since we only have to multiply the a
+    matrix part with part of the vector x and not the whole F matrix. 
+    
+    Parameters
+    ----------
+    A_ : ndarray/sparse.csr[1]
+        the matrix A from the matrix games problem in sparse or ndarray form
+    x_ : ndarray
+        the vector x 
+        
+    Returns
+    -------
+    out : ndarray 
+        the product Fx as a vector
+    
+    Raises
+    ------
+        
+    Notes
+    -----
+    
+    References
+    ----------
+    .. [1] https://docs.scipy.org/doc/scipy/reference/generated/scipy.sparse.csr_matrix.html#scipy.sparse.csr_matrix
+    
+    Examples
+    --------
+    """
+    def operator(q):
+        q = np.reshape(q, (len(q),1))
+        q_top = self.A.T@q[self.dimM:]
+        q_bot = -self.A@q[:self.dimM]
+        self.Fx = np.append(q_top, q_bot)
+        return np.append(q_top, q_bot)
+    return operator
+    
+## --------------------------------------------------------------------------------##
+
+def intern_J(self): 
+    """
+    External function for matrix games library'
+
+    Computes the J operator
+
+    Parameters
+    ----------
+    A_ : ndarray/sparse.csr[1]
+        the matrix A from the matrix games problem in sparse or ndarray form
+    name_ : string
+        the name of the J operator to use
+    prox_g_ : function
+        the proximal operator function to use
+
+    Returns
+    -------
+    out : function 
+        a function that descibes the J operator 
+
+    Raises
+    ------
+
+    Notes
+    -----
+
+    References
+    ----------
+    .. [1] https://docs.scipy.org/doc/scipy/reference/generated/scipy.sparse.csr_matrix.html#scipy.sparse.csr_matrix
+
+    Examples
+    --------
+    """
+    if self.name == 'simplex':
+        def J(q):
+            if self.Fx is None:
+                Fx = self.F(q)
+            else:
+                Fx = self.Fx
+            ATy = Fx[:self.dimM]
+            Ax = -Fx[self.dimM:]
+            return np.amax(Ax) - np.amin(ATy) 
+        def J_complete(q, ax, ay):
+            return np.amax(ax) - np.amin(ay)
+        return J, J_complete
+    else :
+        def J(q):
+            if self.Fx is None:
+                Fx = self.F(q)
+            else:
+                Fx = self.Fx
+            return LA.norm(q - prox_g_(q - Fx, 1))
+    return J, None
+
+## --------------------------------------------------------------------------------##
+
+def intern_proxg(self):
+    """
+    External function for matrix games library'
+    
+    Computes the proxima operator. There are __ predefined operators available:
+        - "simplex" : uses the simplex projection see the function 'projsplx'
+        - "fmax"         : returns the (q)+ version of the vector 
+        - "none"         : just returns q itself
+    
+    Parameters
+    ----------
+    name_ : string
+        the name of the proximal operator to use
+        
+    Returns
+    -------
+    out : function 
+        a function that descibes the prox_g operator 
+    
+    Raises
+    ------
+    ValueError: unknown string
+        If name_ is not one of the stored strings and defined proxg_operators.   
+        
+    Notes
+    -----
+    
+    References
+    ----------
+    
+    Examples
+    --------
+    """
+    if self.name == "simplex":
+        def prox_g(q, eps): 
+            x = q[:self.dimM]
+            y = q[self.dimM:]
+            return np.concatenate((projsplx(x),projsplx(y)))
+    elif  self.name == "fmax":
+        def prox_g(q, eps):
+            return np.fmax(q,0)
+    elif  self.name == "none":
+        def prox_g(q, eps):
+            return q 
+    else:
+        raise ValueError('Input string unknown. Please refer to documentation.') 
+    return prox_g
+
+
         
 
 

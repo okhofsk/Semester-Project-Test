@@ -262,6 +262,7 @@ def Fx_product(A_, x_):
     (dimN, dimM) = A_.shape
     x_top = A_.T@x[dimM:]
     x_bot = -A_@x[:dimM]
+    self.F_temp = np.append(x_top, x_bot)
     return np.append(x_top, x_bot)
 
 ## --------------------------------------------------------------------------------##
@@ -337,9 +338,6 @@ def J_operator(A_, name_, prox_g_):
     dimN, dimM = A_.shape
     if name_ == 'simplex':
         def J(q):
-            #x = prox_g_(q[:dimM],1)
-            #y = prox_g_(q[dimM:dimN+dimM],1)
-            #q_temp = np.concatenate((x,y))
             Fx = Fx_product(A_, q)
             ATy = Fx[:dimM]
             Ax = -Fx[dimM:]
