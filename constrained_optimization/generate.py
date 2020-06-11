@@ -46,6 +46,8 @@ def randQCQP(N_, M_,proj_=None, convex_=True, equality_=False, L_=0):
     else:
         return q0, p, q, r, None, None
     
+## --------------------------------------------------------------------------------##
+
 def randQCQPmat(N_, M_, proj_=None, convex_=True, equality_=False, L_=0):
     p = []
     q = []
@@ -131,10 +133,6 @@ def create_F(gradf_, hx_, gradh_, A_=None, b_=None):
                     vec_prod += y[i] * gradh_[i+1](x,i+1)
                     fy[i] = -hx_[i+1](x, i+1)
                 fx = gradf_(x)+ vec_prod
-                #print("gradf_(x): ", gradf_(x))
-                #print("vec_prod: ", vec_prod)
-                #print("fx: ", fx)
-                #print("fy: ", fy)
                 return fx, fy, None
     else:
         def Fx(x,y,u):
@@ -146,18 +144,8 @@ def create_F(gradf_, hx_, gradh_, A_=None, b_=None):
                 vec_prod = np.zeros(len(x))
                 fy = np.zeros(len(y))
                 for i in range(len(y)):
-                    #print("gradh difference: ", gradh_[i](x,i+1))
-                    #print("y: ", y[i])
-                    #print("vec-prod(should): ", y * gradh_[i](x,i+1))
-                    #print("vec-prod(is): ", vec_prod)
                     vec_prod += y[i] * gradh_[i+1](x,i+1)
-                    #print("vec-prod(is): ", vec_prod)
                     fy[i] = -hx_[i+1](x,i+1)
-                
-                #print(vec_prod.shape)
-                #print(u.shape)
-                #print((A_.T@u).shape)
-                    
                 fx = gradf_(x)+ vec_prod + A_.T@u
                 fu = b_-A_@x
                 return fx, fy, fu
@@ -165,9 +153,12 @@ def create_F(gradf_, hx_, gradh_, A_=None, b_=None):
 
 ## --------------------------------------------------------------------------------##
 
-def create_J(gradf_, hx_, gradh_, proj_, A_=None, b_=None):
+def create_J(gradf_, hx_, gradh_, proj_, Fx_=None, A_=None, b_=None):
     if A_ is None:
-        Fx = create_F(gradf_, hx_, gradh_)
+        if Fx is None:
+            Fx = create_F(gradf_, hx_, gradh_)
+        else:
+            Fx = Fx_
         def J(x,y):
             if hx_ is None or gradh_ is None:
                 fx, _, _ = Fx(x,y)
@@ -183,7 +174,10 @@ def create_J(gradf_, hx_, gradh_, proj_, A_=None, b_=None):
                 total = np.concatenate((xp, yp))
                 return np.linalg.norm(xp)+np.linalg.norm(yp),None,None
     else:
-        Fx = create_F(gradf_, hx_, gradh_, A_, b_)
+        if Fx is None:
+            Fx = create_F(gradf_, hx_, gradh_, A_, b_)
+        else:
+            Fx = Fx_
         def J(x,y,u):
             if hx_ is None or gradh_ is None:
                 fx, _, fu = Fx(x,y,u)
