@@ -1,0 +1,3 @@
+
+LARGEST_ARRAY = 20000
+COR_NAME = "minimat"
